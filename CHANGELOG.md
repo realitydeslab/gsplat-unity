@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Optional Meta Depth API environment occlusion in the gsplat fragment shader, gated by a `multi_compile _ HARD_OCCLUSION SOFT_OCCLUSION` keyword. Drop a `GsplatMetaDepthOcclusion` component anywhere in the scene to toggle it; pick `Hard` (crisp, cheaper) or `Soft` (anti-aliased edge). The `Gsplat.asmdef` autodetects `com.meta.xr.depthapi.urp` + `com.meta.xr.sdk.core` via `versionDefines` so the C# component and shader path stay inert when those packages aren't installed. Tested for the Quest 3 standalone passthrough use case. ([@botaohu](https://github.com/botaohu) / [@realitydeslab](https://github.com/realitydeslab))
+
 - Added an activatable refresh rate slider, running the sorting every Nth frame and the cutouts computation every Nth sort. Force a sort computation when a camera moves or rotates past a customizable threshold. ([#20](https://github.com/wuyize25/gsplat-unity/pull/20) by [@Arthur-Aillet](https://github.com/Arthur-Aillet))
 
 - `GsplatCutout` component to edit the Gaussian Splattings dynamically. A compute shader prepass is done before rendering that creates the order buffer, ignoring splats contained in cutout shapes and removing them from further calculations. ([#19](https://github.com/wuyize25/gsplat-unity/pull/19) by [@Arthur-Aillet](https://github.com/Arthur-Aillet))

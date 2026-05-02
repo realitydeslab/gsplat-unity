@@ -33,6 +33,8 @@ Most 3DGS assets are trained in Gamma space, following the official implementati
 
 - Cutouts to edit Gaussians Dynamically
 
+- Optional Meta Depth API environment occlusion (Quest 2/3/3S/Pro) — autodetected when `com.meta.xr.depthapi.urp` is in the manifest
+
 ## Platform Compatibility
 
 The sorting pass, built upon [b0nes164/GPUSorting](https://github.com/b0nes164/GPUSorting), requires wave / subgroups operations which are only available in D3D12, Metal or Vulkan graphics APIs. WebGPU supports the subgroup operations but Unity has not implemented it. Anything using other graphics APIs will not work. I have only tested on Windows, Mac and Android, but the compatibility of this package should be similar to [aras-p/UnityGaussianSplatting](https://github.com/aras-p/UnityGaussianSplatting).
@@ -72,6 +74,17 @@ The `Gamma To Linear` option is offered as a workaround to render Gamma Space Gs
 The `Brightness` option allows post-hoc scaling of the Gsplat Asset's brightness. This is functional regardless of color space choices, but will degrade quality if the project and assets are in Gamma Space. This can be most smoothly controlled via the `Log Brightness` slider.
 
 The `Async Upload` option enables streaming data from RAM to VRAM, which can help reduce lags when loading the `GsplatRenderer` or setting its enable property to true. When enabled, the renderer can optionally draw before upload completes (`Render Before Upload Complete`), which will render the asset with whatever data has been uploaded so far.
+
+### Meta Depth API environment occlusion (Quest)
+
+When Meta's Depth API is in the project's manifest, gsplats can be occluded by the real-world geometry the headset sees through passthrough.
+
+1. Install the Meta XR All-in-One SDK and the Meta Depth API URP packages so that `com.meta.xr.depthapi.urp` and `com.meta.xr.sdk.core` resolve. The `Gsplat.asmdef` will pick them up automatically through `versionDefines`.
+2. Add an `EnvironmentDepthManager` component to your scene (Meta's standard depth-driver), as you would for any depth-aware shader.
+3. Add a `Gsplat Meta Depth Occlusion` component (Component menu → `Gsplat`) anywhere in the scene. Pick `Mode = Hard` (crisp depth test, lowest GPU cost) or `Soft` (anti-aliased edge, ~1.4× GPU cost). Tune `Environment Depth Bias` if you see z-fighting along real surfaces (Meta recommends ~0.06).
+4. The component sets the `HARD_OCCLUSION` / `SOFT_OCCLUSION` shader keyword on the gsplat material at scene scope; toggling its `Mode` to `Off` disables both keywords and the shader returns to its non-occluding behavior at zero runtime cost.
+
+When neither package is installed, the component file is excluded from compilation by `#if GSPLAT_ENABLE_URP && GSPLAT_ENABLE_META_DEPTH` and the shader's occlusion path is gated behind the same keywords, so end users on non-Quest projects pay nothing for this feature.
 
 ## Additional Documentation
 
