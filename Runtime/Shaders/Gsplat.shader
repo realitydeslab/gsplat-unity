@@ -25,6 +25,14 @@ Shader "Gsplat/Standard"
             #pragma multi_compile SH_BANDS_0 SH_BANDS_1 SH_BANDS_2 SH_BANDS_3
             #pragma multi_compile UNCOMPRESSED SPARK
 
+            // Optional Meta Depth API environment occlusion. Off by default;
+            // when neither HARD_OCCLUSION nor SOFT_OCCLUSION is set the include
+            // is skipped and the shader behaves exactly like upstream. The
+            // GsplatMetaDepthOcclusion component sets one of these keywords on
+            // the material at runtime, gated by GSPLAT_ENABLE_META_DEPTH so it
+            // only compiles when com.meta.xr.depthapi.urp is in the manifest.
+            #pragma multi_compile _ HARD_OCCLUSION SOFT_OCCLUSION
+
             #include "UnityCG.cginc"
             #include "Gsplat.hlsl"
             #ifdef UNCOMPRESSED
@@ -32,6 +40,17 @@ Shader "Gsplat/Standard"
             #endif
             #ifdef SPARK
             #include "GsplatSpark.hlsl"
+            #endif
+
+            #if defined(HARD_OCCLUSION) || defined(SOFT_OCCLUSION)
+                #define GSPLAT_META_DEPTH_ON 1
+                // EnvironmentOcclusionURP.hlsl ships in the Meta XR Core SDK
+                // (com.meta.xr.sdk.core) — not in the depthapi.urp package
+                // despite the name. Include path verified against
+                // oculus-samples/Unity-DepthAPI v85+ standard shaders.
+                #include "Packages/com.meta.xr.sdk.core/Shaders/EnvironmentDepth/URP/EnvironmentOcclusionURP.hlsl"
+            #else
+                #define GSPLAT_META_DEPTH_ON 0
             #endif
 
 
@@ -43,6 +62,10 @@ Shader "Gsplat/Standard"
             float _Brightness;
             float _ScaleFactor;
             StructuredBuffer<uint> _OrderBuffer;
+            // PURPOSE: Bias added to the environment-depth comparison to fight
+            // z-fighting along real-world surfaces. Meta recommends ~0.06.
+            // Used only when HARD_OCCLUSION or SOFT_OCCLUSION is enabled.
+            float _EnvironmentDepthBias;
 
             struct appdata
             {
@@ -74,6 +97,12 @@ Shader "Gsplat/Standard"
                 float2 uv : TEXCOORD0;
                 float4 vertex : SV_POSITION;
                 float4 color: COLOR;
+            #if GSPLAT_META_DEPTH_ON
+                // World-space splat center, derived from view-space center
+                // via UNITY_MATRIX_I_V — sidesteps wuyize25's procedural
+                // geometry not having a per-vertex object-space attribute.
+                float3 worldPos : TEXCOORD1;
+            #endif
                 UNITY_VERTEX_OUTPUT_STEREO
             };
 
@@ -108,6 +137,15 @@ Shader "Gsplat/Standard"
                 o.vertex = center.proj + float4(corner.offset.x, _ProjectionParams.x * corner.offset.y, 0, 0);
                 o.color = color;
                 o.uv = corner.uv;
+
+            #if GSPLAT_META_DEPTH_ON
+                // center.view is in camera (view) space; transform to world.
+                // Approximating per-fragment world position by the splat
+                // center is acceptable because gaussians are small relative
+                // to the depth-camera resolution.
+                o.worldPos = mul(UNITY_MATRIX_I_V, float4(center.view, 1.0)).xyz;
+            #endif
+
                 return o;
             }
 
@@ -121,6 +159,15 @@ Shader "Gsplat/Standard"
 
                 float falloff = -exp((maxUV - _ScaleFactor * 1.16) * 25 * _ScaleFactor);
                 float alpha = (exp(-A * 4.0) + falloff) * i.color.a;
+
+            #if GSPLAT_META_DEPTH_ON
+                // Sample environment depth and gate the splat's alpha by it.
+                // META_DEPTH_GET_OCCLUSION_VALUE_WORLDPOS returns 1 where the
+                // splat is in front of the real world (visible) and 0 where
+                // the real world is closer (occluded).
+                float occlusionValue = META_DEPTH_GET_OCCLUSION_VALUE_WORLDPOS(i.worldPos, _EnvironmentDepthBias);
+                alpha *= occlusionValue;
+            #endif
 
                 if (alpha < 1.0 / 255.0) discard;
                 if (_GammaToLinear)

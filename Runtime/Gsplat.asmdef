@@ -24,6 +24,16 @@
             "name": "com.unity.render-pipelines.high-definition",
             "expression": "",
             "define": "GSPLAT_ENABLE_HDRP"
+        },
+        {
+            "name": "com.meta.xr.sdk.core",
+            "expression": "",
+            "define": "GSPLAT_ENABLE_META_XR_CORE"
+        },
+        {
+            "name": "com.meta.xr.depthapi.urp",
+            "expression": "",
+            "define": "GSPLAT_ENABLE_META_DEPTH"
         }
     ],
     "noEngineReferences": false

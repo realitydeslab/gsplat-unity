@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- SPZ importer: drag a Niantic / Scaniverse `.spz` file into the project and it is decoded and imported as a `GsplatAsset` (Spark or Uncompressed) the same way as PLY. Supports SPZ legacy gzip-wrapped headers v1, v2, and v3 (smallest-three quaternions); v4 NGSP/zstd is not yet implemented. Pure System.* parser, no extra package dependencies. Headless test harness in `Tools~/SpzImporterTests/`. ([@botaohu](https://github.com/botaohu) / [@realitydeslab](https://github.com/realitydeslab))
+- _(Upstream pending changes inherited from wuyize25/gsplat-unity main branch follow.)_
 
 - Added an activatable refresh rate slider, running the sorting every Nth frame and the cutouts computation every Nth sort. Force a sort computation when a camera moves or rotates past a customizable threshold. ([#20](https://github.com/wuyize25/gsplat-unity/pull/20) by [@Arthur-Aillet](https://github.com/Arthur-Aillet))
 
@@ -18,6 +18,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Multiple materials generated automatically to let the user define a custom render order. Max Render order defined in `GsplatSettings`. ([#19](https://github.com/wuyize25/gsplat-unity/pull/19) by [@Arthur-Aillet](https://github.com/Arthur-Aillet))
 
 - PLY importer and shaders extended to also pack Splats Spherical Harmonics as 2 uint for SH1, 6 uint for SH2 and 10 uint for SH3. The implementation is also heavily inspired by the SparkJS [packing implementation](https://github.com/sparkjsdev/spark/blob/main/src/SplatMesh.ts#L754). ([#14](https://github.com/wuyize25/gsplat-unity/pull/14) by [@Arthur-Aillet](https://github.com/Arthur-Aillet))
+
+## [1.3.0] - 2026-05-02
+
+> Reality Design Lab fork release. Both items below are pending upstream PRs to wuyize25/gsplat-unity.
+
+### Added
+
+- SPZ importer: drag a Niantic / Scaniverse `.spz` file into the project and it is decoded and imported as a `GsplatAsset` (Spark or Uncompressed) the same way as PLY. Supports SPZ legacy gzip-wrapped headers v1, v2, and v3 (smallest-three quaternions); v4 NGSP/zstd is not yet implemented. Pure System.* parser, no extra package dependencies. Headless test harness in `Tools~/SpzImporterTests/`. Validated headlessly against both upstream Niantic samples (786K and 932K splats decode cleanly with zero non-unit quaternions, zero NaN/Inf, sub-second decode). ([@botaohu](https://github.com/botaohu) / [@realitydeslab](https://github.com/realitydeslab))
+
+- Optional Meta Depth API environment occlusion in the gsplat fragment shader, gated by a `multi_compile _ HARD_OCCLUSION SOFT_OCCLUSION` keyword. Drop a `GsplatMetaDepthOcclusion` component anywhere in the scene to toggle it; pick `Hard` (crisp, cheaper) or `Soft` (anti-aliased edge). The `Gsplat.asmdef` autodetects `com.meta.xr.depthapi.urp` + `com.meta.xr.sdk.core` via `versionDefines` so the C# component and shader path stay inert when those packages aren't installed. Tested for the Quest 3 standalone passthrough use case. ([@botaohu](https://github.com/botaohu) / [@realitydeslab](https://github.com/realitydeslab))
 
 ## [1.2.1] - 2026-03-26
 
@@ -100,7 +110,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - This is the first release of Gsplat, as a Package.
 
 
-[unreleased]: https://github.com/wuyize25/gsplat-unity/compare/v1.2.1...HEAD
+[unreleased]: https://github.com/realitydeslab/gsplat-unity/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/realitydeslab/gsplat-unity/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/wuyize25/gsplat-unity/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/wuyize25/gsplat-unity/compare/v1.1.2...v1.2.0
 [1.1.2]: https://github.com/wuyize25/gsplat-unity/compare/v1.1.1...v1.1.2
