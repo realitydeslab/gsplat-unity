@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- SPZ importer: drag a Niantic / Scaniverse `.spz` file into the project and it is decoded and imported as a `GsplatAsset` (Spark or Uncompressed) the same way as PLY. Supports SPZ legacy gzip-wrapped headers v1, v2, and v3 (smallest-three quaternions); v4 NGSP/zstd is not yet implemented. Pure System.* parser, no extra package dependencies. Headless test harness in `Tools~/SpzImporterTests/`. ([@botaohu](https://github.com/botaohu) / [@realitydeslab](https://github.com/realitydeslab))
+
 - Added an activatable refresh rate slider, running the sorting every Nth frame and the cutouts computation every Nth sort. Force a sort computation when a camera moves or rotates past a customizable threshold. ([#20](https://github.com/wuyize25/gsplat-unity/pull/20) by [@Arthur-Aillet](https://github.com/Arthur-Aillet))
 
 - `GsplatCutout` component to edit the Gaussian Splattings dynamically. A compute shader prepass is done before rendering that creates the order buffer, ignoring splats contained in cutout shapes and removing them from further calculations. ([#19](https://github.com/wuyize25/gsplat-unity/pull/19) by [@Arthur-Aillet](https://github.com/Arthur-Aillet))

@@ -99,3 +99,7 @@ InitTestScene*.unity*
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
 
 /.idea/
+
+# SPZ test harness — compiled artifact + downloaded fixtures
+Tools~/SpzImporterTests/run.exe
+Tools~/SpzImporterTests/samples/

@@ -20,6 +20,8 @@ Most 3DGS assets are trained in Gamma space, following the official implementati
 
 - Supports reading & rendering PLY files with SH degrees 0-3
 
+- Supports reading Niantic / Scaniverse `.spz` files (legacy gzip headers v1, v2, v3)
+
 - Supports orthographic projection
 
 - Compatible with MSAA
@@ -60,6 +62,8 @@ The next steps depend on the Render Pipeline you are using:
 ### Import Assets
 
 Copy or drag & drop the PLY file anywhere into your project's `Assets` folder. The package will then automatically read the file and import it as a derived class of `Gsplat Asset`. The package supports two compression modes for the asset: `Uncompressed` and `Spark` (packed). The default mode is `Spark`, which is inspired by [spark.js](https://github.com/sparkjsdev/spark). You can change the compression mode in the inspector of the imported `Gsplat Asset`.
+
+`.spz` files (Niantic / Scaniverse compressed Gaussian splats) can be dropped in the same way. The SPZ importer decodes the file, converts from the SPZ-native RUB coordinate system to the PLY-standard RDF, and feeds the data through the same `LoadFromPly` path. Compression mode is selectable on the imported asset just like for PLY. Currently the legacy gzip-wrapped SPZ headers (v1, v2, v3) are supported; v4 NGSP/zstd files are not yet supported and the importer will report an error pointing you at `spz_cli` to re-save with `--version 3`.
 
 ### Add Gsplat Renderer
 
