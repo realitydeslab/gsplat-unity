@@ -123,6 +123,67 @@ namespace Gsplat
             cs.Dispatch(m_kernelInitOrder, (int)GsplatUtils.DivRoundUp(res.UploadedCount, 1024), 1, 1);
         }
 
+        public override void LoadFromSpz(string spzPath, ProgressCallback progressCallback = null)
+        {
+            // Decode the SPZ binary into intermediate float arrays whose
+            // semantics line up with what LoadFromPly expects after parsing
+            // a 3DGS PLY: positions in RDF, alphas as pre-sigmoid logits,
+            // scales in log-scale, colors as raw SH-DC, quaternions as xyzw.
+            // We mirror the same per-vertex conversions LoadFromPly applies.
+            var spz = SpzReader.Load(spzPath,
+                p => progressCallback?.Invoke("Decoding SPZ", p * 0.5f));
+
+            SplatCount = (uint)spz.NumPoints;
+            SHBands = (byte)spz.ShDegree;
+            int shCoeffs = spz.ShDimPerChannel;
+
+            if (SHBands > 3)
+                throw new NotSupportedException($"SPZ SH degree {SHBands} not supported by Gsplat (max 3)");
+
+            Allocate();
+
+            for (int i = 0; i < spz.NumPoints; i++)
+            {
+                Positions[i] = new Vector3(
+                    spz.Positions[i * 3 + 0],
+                    spz.Positions[i * 3 + 1],
+                    spz.Positions[i * 3 + 2]);
+                Colors[i] = new Vector4(
+                    spz.Colors[i * 3 + 0],
+                    spz.Colors[i * 3 + 1],
+                    spz.Colors[i * 3 + 2],
+                    GsplatUtils.Sigmoid(spz.Alphas[i]));
+                if (shCoeffs > 0)
+                {
+                    int sBase = i * shCoeffs * 3;
+                    for (int j = 0; j < shCoeffs; j++)
+                        SHs[i * shCoeffs + j] = new Vector3(
+                            spz.Sh[sBase + j * 3 + 0],
+                            spz.Sh[sBase + j * 3 + 1],
+                            spz.Sh[sBase + j * 3 + 2]);
+                }
+                Scales[i] = new Vector3(
+                    Mathf.Exp(spz.Scales[i * 3 + 0]),
+                    Mathf.Exp(spz.Scales[i * 3 + 1]),
+                    Mathf.Exp(spz.Scales[i * 3 + 2]));
+                // PLY stores quaternion as (rot_0=w, rot_1=x, rot_2=y, rot_3=z)
+                // and LoadFromPly packs them via Vector4(rot_0..3) — i.e. into
+                // (.x=w, .y=x, .z=y, .w=z). Match that convention so the same
+                // shader (Gsplat.hlsl QuatToMat3) decodes correctly.
+                Rotations[i] = new Vector4(
+                    spz.Rotations[i * 4 + 3],
+                    spz.Rotations[i * 4 + 0],
+                    spz.Rotations[i * 4 + 1],
+                    spz.Rotations[i * 4 + 2]).normalized;
+
+                if (i == 0) Bounds = new Bounds(Positions[i], Vector3.zero);
+                else Bounds.Encapsulate(Positions[i]);
+
+                progressCallback?.Invoke("Building uncompressed asset",
+                    0.5f + i / (float)spz.NumPoints * 0.5f);
+            }
+        }
+
         public override void LoadFromPly(string plyPath, ProgressCallback progressCallback = null)
         {
             using var fs = new FileStream(plyPath, FileMode.Open, FileAccess.Read);

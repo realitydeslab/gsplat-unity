@@ -151,6 +151,87 @@ namespace Gsplat
             cs.Dispatch(m_kernelInitOrder, (int)GsplatUtils.DivRoundUp(res.UploadedCount, 1024), 1, 1);
         }
 
+        public override void LoadFromSpz(string spzPath, ProgressCallback progressCallback = null)
+        {
+            // Decode the SPZ binary into intermediate float arrays. Their
+            // semantics mirror what LoadFromPly hands to PackSplat after PLY
+            // parsing: positions in RDF, alphas as pre-sigmoid logits (PackSplat
+            // sigmoids internally), scales in log-scale (PackSplat exp's
+            // internally), colors as raw SH-DC (PackSplat applies the SH-DC
+            // constant), quaternions reshaped to wxyz to match PLY convention.
+            var spz = SpzReader.Load(spzPath,
+                p => progressCallback?.Invoke("Decoding SPZ", p * 0.5f));
+
+            SplatCount = (uint)spz.NumPoints;
+            SHBands = (byte)spz.ShDegree;
+            int shCoeffs = spz.ShDimPerChannel;
+
+            if (SHBands > 3)
+                throw new NotSupportedException($"SPZ SH degree {SHBands} not supported by Gsplat (max 3)");
+
+            Allocate();
+
+            for (int i = 0; i < spz.NumPoints; i++)
+            {
+                // SH bands packed band-by-band exactly as LoadFromPly does;
+                // SPZ SH layout (per-coefficient triplet) matches PLY's
+                // gather pattern of (R[k], G[k], B[k]) per coefficient.
+                if (shCoeffs > 0)
+                {
+                    int sBase = i * shCoeffs * 3;
+                    int shReadOffset = 0;
+                    for (int b = 1; b <= SHBands; b++)
+                    {
+                        int bandSize = b * 2 + 1;
+                        var shBandData = new float[bandSize * 3];
+                        for (int k = 0; k < bandSize; k++)
+                        {
+                            int srcCoeff = (shReadOffset + k) * 3;
+                            shBandData[k * 3 + 0] = spz.Sh[sBase + srcCoeff + 0];
+                            shBandData[k * 3 + 1] = spz.Sh[sBase + srcCoeff + 1];
+                            shBandData[k * 3 + 2] = spz.Sh[sBase + srcCoeff + 2];
+                        }
+                        if (b == 1) Array.Copy(PackSH1(shBandData), 0, PackedSH1, i * 2, 2);
+                        if (b == 2) Array.Copy(PackSH2(shBandData), 0, PackedSH2, i * 4, 4);
+                        if (b == 3) Array.Copy(PackSH3(shBandData), 0, PackedSH3, i * 4, 4);
+                        shReadOffset += bandSize;
+                    }
+                }
+
+                var color = new Vector4(
+                    spz.Colors[i * 3 + 0],
+                    spz.Colors[i * 3 + 1],
+                    spz.Colors[i * 3 + 2],
+                    spz.Alphas[i]);                // PackSplat sigmoids this internally
+
+                var position = new Vector3(
+                    spz.Positions[i * 3 + 0],
+                    spz.Positions[i * 3 + 1],
+                    spz.Positions[i * 3 + 2]);
+
+                if (i == 0) Bounds = new Bounds(position, Vector3.zero);
+                else Bounds.Encapsulate(position);
+
+                var scale = new Vector3(                // PackSplat exp's these
+                    spz.Scales[i * 3 + 0],
+                    spz.Scales[i * 3 + 1],
+                    spz.Scales[i * 3 + 2]);
+
+                // Match LoadFromPly's `new Quaternion(rot_0..3)` packing where
+                // rot_0=w. SpzReader emits xyzw at indices 0..3, so reshuffle.
+                var rotation = new Quaternion(
+                    spz.Rotations[i * 4 + 3],
+                    spz.Rotations[i * 4 + 0],
+                    spz.Rotations[i * 4 + 1],
+                    spz.Rotations[i * 4 + 2]);
+
+                PackedSplats[i] = PackSplat(color, position, scale, rotation);
+
+                progressCallback?.Invoke("Packing Spark splats",
+                    0.5f + i / (float)spz.NumPoints * 0.5f);
+            }
+        }
+
         public override void LoadFromPly(string plyPath, ProgressCallback progressCallback = null)
         {
             using var fs = new FileStream(plyPath, FileMode.Open, FileAccess.Read);

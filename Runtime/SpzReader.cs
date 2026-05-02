@@ -13,13 +13,15 @@
 //
 // This file uses only System.* types so it can compile both inside the Unity
 // Editor and in a standalone .NET console harness for headless tests
-// (see Tools~/SpzImporterTests/).
+// (see Tools~/SpzImporterTests/). Lives in Runtime/ — not Editor/ — because
+// GsplatAsset.LoadFromSpz (Runtime) calls into it; runtime asmdefs cannot
+// reference editor-only code.
 
 using System;
 using System.IO;
 using System.IO.Compression;
 
-namespace Gsplat.Editor
+namespace Gsplat
 {
     /// <summary>Decoded SPZ contents in standard 3DGS-PLY conventions (RDF coordinates).</summary>
     public sealed class SpzGaussianCloud

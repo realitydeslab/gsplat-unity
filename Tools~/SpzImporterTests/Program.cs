@@ -1,5 +1,5 @@
 // Standalone validator for SpzReader.cs. Compile + run with:
-//   csc -nologo -langversion:latest Program.cs ../../Editor/SpzReader.cs -out:run.exe
+//   csc -nologo -langversion:latest Program.cs ../../Runtime/SpzReader.cs -out:run.exe
 //   mono run.exe path/to/file.spz [path/to/another.spz ...]
 //
 // Reports decoded statistics and bounding-box info per file. Designed to
@@ -10,7 +10,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using Gsplat.Editor;
+using Gsplat;
 
 internal static class Program
 {

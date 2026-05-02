@@ -11,6 +11,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - _(Upstream pending changes inherited from wuyize25/gsplat-unity main branch follow.)_
 
+## [1.4.0] - 2026-05-02
+
+> Reality Design Lab fork release. Refactor of the SPZ importer to remove the temp-PLY round-trip; SPZ data now flows directly into `GsplatAsset` arrays.
+
+### Added
+
+- `GsplatAsset.LoadFromSpz(spzPath, progressCallback)` — abstract method paired with the existing `LoadFromPly`. Concrete implementations in `GsplatAssetUncompressed` and `GsplatAssetSpark` populate `Positions`/`Colors`/`Scales`/`Rotations`/`SHs` (or the Spark `PackedSplats` + `PackedSH1/2/3` buffers) directly from the decoded SPZ byte stream. ([@botaohu](https://github.com/botaohu) / [@realitydeslab](https://github.com/realitydeslab))
+
+### Changed
+
+- Moved `SpzReader.cs` from `Editor/` to `Runtime/` so the asset implementations can call into it (Runtime asmdefs cannot reference Editor code). The class now lives in the `Gsplat` namespace instead of `Gsplat.Editor`. The binary parser API (`SpzReader.Load(path)` returning `SpzGaussianCloud`) is unchanged.
+- `Editor/SpzImporter.cs` rewritten to call `asset.LoadFromSpz(...)` directly; the previous temp-PLY round-trip (write SPZ → temp .ply on disk → re-read with `LoadFromPly`) is removed. Eliminates one disk write/read of ~30 MB per asset and one redundant float-array allocation per import.
+
+## [1.3.0] - 2026-05-02
+
 - Added an activatable refresh rate slider, running the sorting every Nth frame and the cutouts computation every Nth sort. Force a sort computation when a camera moves or rotates past a customizable threshold. ([#20](https://github.com/wuyize25/gsplat-unity/pull/20) by [@Arthur-Aillet](https://github.com/Arthur-Aillet))
 
 - `GsplatCutout` component to edit the Gaussian Splattings dynamically. A compute shader prepass is done before rendering that creates the order buffer, ignoring splats contained in cutout shapes and removing them from further calculations. ([#19](https://github.com/wuyize25/gsplat-unity/pull/19) by [@Arthur-Aillet](https://github.com/Arthur-Aillet))
@@ -110,7 +125,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - This is the first release of Gsplat, as a Package.
 
 
-[unreleased]: https://github.com/realitydeslab/gsplat-unity/compare/v1.3.0...HEAD
+[unreleased]: https://github.com/realitydeslab/gsplat-unity/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/realitydeslab/gsplat-unity/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/realitydeslab/gsplat-unity/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/wuyize25/gsplat-unity/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/wuyize25/gsplat-unity/compare/v1.1.2...v1.2.0

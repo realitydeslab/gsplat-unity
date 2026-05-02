@@ -110,6 +110,7 @@ namespace Gsplat
 
         public abstract void Allocate();
         public abstract void LoadFromPly(string plyPath, ProgressCallback progressCallback = null);
+        public abstract void LoadFromSpz(string spzPath, ProgressCallback progressCallback = null);
 
         public abstract GsplatResource CreateResource();
 

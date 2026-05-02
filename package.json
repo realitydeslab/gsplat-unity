@@ -3,7 +3,7 @@
   "description": "3D Gaussian Splatting renderer. realitydeslab fork adds: SPZ importer (Niantic / Scaniverse v1/v2/v3), optional Meta Depth API environment occlusion. Both pending upstream PRs to wuyize25/gsplat-unity.",
   "displayName": "Gsplat",
   "name": "wu.yize.gsplat",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "license": "MIT",
   "repository": "github:realitydeslab/gsplat-unity",
   "dependencies": {

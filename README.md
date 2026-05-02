@@ -1,6 +1,6 @@
 # Gsplat
 
-[![Changelog](https://img.shields.io/badge/changelog-f15d30.svg)](./CHANGELOG.md) [![Version](https://img.shields.io/badge/version-v1.3.0-blue.svg)](https://github.com/realitydeslab/gsplat-unity/releases/tag/v1.3.0) [![License](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE.md)
+[![Changelog](https://img.shields.io/badge/changelog-f15d30.svg)](./CHANGELOG.md) [![Version](https://img.shields.io/badge/version-v1.4.0-blue.svg)](https://github.com/realitydeslab/gsplat-unity/releases/tag/v1.4.0) [![License](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE.md)
 
 > _Reality Design Lab fork of [wuyize25/gsplat-unity](https://github.com/wuyize25/gsplat-unity) — adds an SPZ importer (Niantic / Scaniverse) and optional Meta Depth API environment occlusion on top of upstream v1.2.1. Both additions are pending upstream PRs to wuyize25._
 
