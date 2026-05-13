@@ -16,13 +16,20 @@ bool InitSplatData(SplatSource source, float4x4 modelView, out SplatCenter cente
     float3 modelCenter = _PositionBuffer[source.id];
     if (!InitCenter(modelView, modelCenter, center))
         return false;
+
+    // Read colour (with stored sigmoid'd alpha in .w) BEFORE the expensive covariance work.
+    // Splats that would die in the fragment-shader alpha discard anyway never reach the
+    // QuatToMat3 / Jacobian projection / eigenvalue dance below.
+    color = _ColorBuffer[source.id];
+    if (color.w < _MinSplatAlpha)
+        return false;
+    color.rgb = color.rgb * SH_C0 + 0.5;
+
     float4 quat = _RotationBuffer[source.id];
     float3 scale = _ScaleBuffer[source.id];
     SplatCovariance cov = CalcCovariance(quat, scale);
     if (!InitCorner(source, cov, center, corner))
         return false;
-    color = _ColorBuffer[source.id];
-    color.rgb = color.rgb * SH_C0 + 0.5;
     return true;
 }
 

@@ -35,6 +35,30 @@ namespace Gsplat
         [Tooltip("Does cutouts update the Gsplat world bounds? (Costly on moving cutouts)")]
         public bool CutoutsUpdateBounds = true;
 
+        [Header("Quest environment-depth occlusion")]
+        [Tooltip("Virtual-offset depth bias passed to Meta's META_DEPTH_OCCLUDE_OUTPUT_PREMULTIPLY " +
+                 "macro. Positive pushes the splat in front of, negative behind, the real surface. " +
+                 "Meta's advanced-usage docs recommend a starting value around 0.06; tune per scene " +
+                 "to kill z-fighting at occluded contours. Has no effect unless the material's " +
+                 "HARD_OCCLUSION or SOFT_OCCLUSION keyword is enabled.")]
+        [Range(-0.1f, 0.1f)] public float EnvironmentDepthBias = 0.06f;
+
+        [Header("Distance culling")]
+        [Tooltip("Reject splats whose view-space center is farther than this many meters from the " +
+                 "camera. The reject happens BEFORE the per-splat covariance math runs, so it nukes " +
+                 "both the fragment and vertex work for far splats. Set to 0 to disable (render every " +
+                 "splat the asset bounds allow). For room-scale MR, 4–6 m typically gives a clean win.")]
+        [Range(0f, 50f)] public float MaxRenderDistance = 0.0f;
+
+        [Header("Alpha pre-cull")]
+        [Tooltip("Reject splats whose stored alpha is below this threshold BEFORE the quaternion-to-" +
+                 "matrix + Jacobian projection math runs. The fragment shader already discards alphas " +
+                 "below 1/255 ≈ 0.0039, so any splat with stored alpha at or below that threshold " +
+                 "could never contribute a visible pixel anyway. Set to 0.0039 to enable safely with " +
+                 "zero visual impact, or higher (e.g. 0.02) to aggressively kill faint splats and " +
+                 "trade a hint of fidelity for vertex work saved. 0 disables the cull.")]
+        [Range(0f, 0.5f)] public float MinSplatAlpha = 0.0f;
+
         GsplatAsset m_prevAsset;
         GsplatRendererImpl m_renderer;
 
@@ -156,7 +180,9 @@ namespace Gsplat
                 m_renderer.EvaluateRefreshRequired(SortMode, SortRefreshRate - 1, CutoutsRefreshRate - 1);
                 m_renderer.DispatchInitOrder(Cutouts, transform.localToWorldMatrix, CutoutsUpdateBounds);
                 m_renderer.Render(transform, gameObject.layer, GammaToLinear, SHDegree, Brightness,
-                    1.0f - SplatDownscaleFactor, RenderOrder);
+                    1.0f - SplatDownscaleFactor, RenderOrder,
+                    EnvironmentDepthBias,
+                    MaxRenderDistance, MinSplatAlpha);
             }
         }
     }

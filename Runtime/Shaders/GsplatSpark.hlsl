@@ -72,6 +72,10 @@ bool InitSplatData(SplatSource source, float4x4 modelView, out SplatCenter cente
     UnpackSplat(packedSplat, color, modelCenter, scale, quat);
     if (!InitCenter(modelView, modelCenter, center))
         return false;
+    // Alpha pre-cull. Skip the QuatToMat3 + Jacobian work for any splat too transparent
+    // to leave a visible fragment after the frag's `alpha < 1/255` discard.
+    if (color.w < _MinSplatAlpha)
+        return false;
     SplatCovariance cov = CalcCovariance(quat, scale);
     if (!InitCorner(source, cov, center, corner))
         return false;

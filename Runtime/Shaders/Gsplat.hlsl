@@ -7,6 +7,12 @@
 #ifndef GSPLAT_INCLUDED
 #define GSPLAT_INCLUDED
 
+// BiRP→URP compat shim: the parent shader includes core RP Macros.hlsl (via URP Core.hlsl),
+// which defines PI but not BiRP's UNITY_PI. Alias so BiRP-style code keeps compiling.
+#if !defined(UNITY_PI) && defined(PI)
+#define UNITY_PI PI
+#endif
+
 struct SplatSource
 {
     uint order;
@@ -20,6 +26,7 @@ struct SplatCenter
     float4 proj;
     float4x4 modelView;
     float projMat00;
+    float3 model; // splat center in object/model space (for world-space reconstruction, e.g. Quest occlusion)
 };
 
 struct SplatCovariance
@@ -40,10 +47,32 @@ struct SplatCorner
 
 const float4 discardVec = float4(0.0, 0.0, 2.0, 1.0);
 
+// Optional far-plane / distance cull. Set from the renderer's MaterialPropertyBlock.
+// 0 (or any non-positive value) disables the cull — render every splat regardless.
+float _MaxRenderDistance;
+
+// Pre-cull splats whose stored alpha is below this threshold. Lets transparent splats
+// die before the expensive QuatToMat3 + Jacobian projection inside CalcCovariance.
+// 1.0/255.0 ≈ 0.0039 matches the existing fragment-shader discard threshold, so anything
+// below it could never produce a visible fragment anyway. Default 0 = disabled.
+float _MinSplatAlpha;
+
+// Note: occlusion knobs live in Gsplat.shader (_EnvironmentDepthBias) and are pushed
+// through Meta's META_DEPTH_OCCLUDE_OUTPUT_PREMULTIPLY_WORLDPOS macro. The old custom
+// _OcclusionRangeMin/Max gate was removed because Meta's depth-API has no such concept.
+
 bool InitCenter(float4x4 modelView, float3 modelCenter, out SplatCenter center)
 {
     float4 centerView = mul(modelView, float4(modelCenter, 1.0));
+    // Behind camera (Unity view space has forward = -Z; z > 0 means the splat is behind the eye).
     if (centerView.z > 0.0)
+    {
+        return false;
+    }
+    // Distance cull. View-space depth = -centerView.z. Skip the covariance math entirely for
+    // splats past the working volume — biggest win is for room-scale MR scenes where most
+    // splats sit a few meters away but the asset bounds extend far past that.
+    if (_MaxRenderDistance > 0.0 && centerView.z < -_MaxRenderDistance)
     {
         return false;
     }
@@ -53,6 +82,7 @@ bool InitCenter(float4x4 modelView, float3 modelCenter, out SplatCenter center)
     center.proj = centerProj;
     center.projMat00 = UNITY_MATRIX_P[0][0];
     center.modelView = modelView;
+    center.model = modelCenter;
     return true;
 }
 
